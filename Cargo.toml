@@ -19,4 +19,4 @@ path = "src/bin/ast.rs"
 [dependencies]
 log = {version = "0.4.14"}
 pretty_env_logger = {version = "0.4"}
-lazy_static = "1"
+phf = { version = "0.9", features = ["macros"] }
