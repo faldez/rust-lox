@@ -4,7 +4,17 @@ version = "0.1.0"
 authors = ["Muhammad Fadhlika <fadhlika@gmail.com>"]
 edition = "2018"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "lox"
+src = "src/lox.rs"
+
+[[bin]]
+name = "lox"
+path = "src/bin/lox.rs"
+
+[[bin]]
+name = "ast"
+path = "src/bin/ast.rs"
 
 [dependencies]
 log = {version = "0.4.14"}
