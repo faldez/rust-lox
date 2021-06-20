@@ -1,10 +1,8 @@
+use std::{iter::Peekable, str::Chars};
+
 use phf::phf_map;
 
-use crate::{
-    lox::Lox,
-    token::{DataType, Token},
-    token_type::TokenType,
-};
+use crate::token::{DataType, Token, TokenType};
 
 static KEYWORDS: phf::Map<&'static str, TokenType> = phf_map! {
     "and" => TokenType::And,
@@ -25,29 +23,32 @@ static KEYWORDS: phf::Map<&'static str, TokenType> = phf_map! {
     "while" => TokenType::While,
 };
 
-pub struct Scanner {
-    source: String,
-    tokens: Vec<Token>,
-    start: usize,
-    current: usize,
+pub struct Scanner<'a> {
+    iter: Peekable<Chars<'a>>,
+    ch: char,
     line: usize,
 }
 
-impl Scanner {
+impl<'a> Iterator for Scanner<'a> {
+    type Item = Token;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        todo!()
+    }
+}
+
+impl<'a> Scanner<'a> {
     pub fn new(source: String) -> Self {
-        Self {
-            source,
-            tokens: Vec::new(),
-            start: 0,
-            current: 0,
-            line: 1,
-        }
+        let iter = source.chars().peekable();
+        let ch = if let Some(ch) = iter.next() { ch } else { '\0' };
+
+        Self { iter, ch, line: 1 }
     }
 
     pub fn scan_tokens(&mut self) -> Vec<Token> {
         while !self.is_at_end() {
             self.start = self.current;
-            self.scan_token();
+            self.next();
         }
 
         self.tokens
@@ -55,54 +56,71 @@ impl Scanner {
         self.tokens.clone()
     }
 
-    fn scan_token(&mut self) {
-        let c = self.advance();
-        match c {
-            '(' => self.add_token(TokenType::LeftParen),
-            ')' => self.add_token(TokenType::RightParen),
-            '{' => self.add_token(TokenType::LeftBrace),
-            '}' => self.add_token(TokenType::RightBrace),
-            ',' => self.add_token(TokenType::Comma),
-            '.' => self.add_token(TokenType::Dot),
-            '-' => self.add_token(TokenType::Minus),
-            '+' => self.add_token(TokenType::Plus),
-            ';' => self.add_token(TokenType::Semicolon),
-            '*' => self.add_token(TokenType::Star),
+    fn take_while<F>(&mut self, predicate: F) -> String
+    where
+        F: Fn(char) -> bool,
+    {
+        let mut s = String::new();
+        if self.ch != '\0' {
+            s.push(self.ch);
+        }
+        while let Some(c) = self.iter.next() {
+            if !predicate(c) {
+                self.ch = c;
+                return s;
+            }
+            s.push(c);
+        }
+        self.ch = '\n';
+        s
+    }
+
+    fn next(&mut self) -> Token {
+        match self.ch {
+            '(' => Token::new(TokenType::LeftParen, self.ch.to_string()),
+            ')' => Token::new(TokenType::RightParen, self.ch.to_string()),
+            '{' => Token::new(TokenType::LeftBrace, self.ch.to_string()),
+            '}' => Token::new(TokenType::RightBrace, self.ch.to_string()),
+            ',' => Token::new(TokenType::Comma, self.ch.to_string()),
+            '.' => Token::new(TokenType::Dot, self.ch.to_string()),
+            '-' => Token::new(TokenType::Minus, self.ch.to_string()),
+            '+' => Token::new(TokenType::Plus, self.ch.to_string()),
+            ';' => Token::new(TokenType::Semicolon, self.ch.to_string()),
+            '*' => Token::new(TokenType::Star, self.ch.to_string()),
             '!' => {
                 if self.match_char('=') {
-                    self.add_token(TokenType::BangEqual)
+                    Token::new(TokenType::BangEqual, "!=".to_string())
                 } else {
-                    self.add_token(TokenType::Bang)
+                    Token::new(TokenType::Bang, "!".to_string())
                 }
             }
             '=' => {
                 if self.match_char('=') {
-                    self.add_token(TokenType::EqualEqual)
+                    Token::new(TokenType::EqualEqual, "==".to_string())
                 } else {
-                    self.add_token(TokenType::Equal)
+                    Token::new(TokenType::Equal, "=".to_string())
                 }
             }
             '<' => {
                 if self.match_char('=') {
-                    self.add_token(TokenType::LessEqual)
+                    Token::new(TokenType::LessEqual, "<=".to_string())
                 } else {
-                    self.add_token(TokenType::Less)
+                    Token::new(TokenType::Less, "<".to_string())
                 }
             }
             '>' => {
                 if self.match_char('=') {
-                    self.add_token(TokenType::GreaterEqual)
+                    Token::new(TokenType::GreaterEqual, ">=".to_string())
                 } else {
-                    self.add_token(TokenType::Greater)
+                    Token::new(TokenType::Greater, ">".to_string())
                 }
             }
             '/' => {
                 if self.match_char('/') {
-                    while self.peek() != '\n' && !self.is_at_end() {
-                        self.advance();
-                    }
+                    let s = self.take_while(|c| c != '\n' || c != '\0');
+                    Token::new_with_literal(TokenType::Comment, "//".to_string(), s)
                 } else {
-                    self.add_token(TokenType::Slash);
+                    Token::new(TokenType::Slash, "/".to_string())
                 }
             }
             ' ' | '\r' | '\t' => {}
@@ -174,18 +192,15 @@ impl Scanner {
     }
 
     fn peek(&self) -> char {
-        if self.is_at_end() {
-            '\0'
-        } else {
-            self.source.chars().nth(self.current).unwrap()
-        }
+        self.ch
     }
 
     fn peek_next(&self) -> char {
-        if self.current + 1 >= self.source.len() {
-            return '\0';
+        if let Some(c) = self.iter.peek().cloned() {
+            c
+        } else {
+            '\0'
         }
-        self.source.chars().nth(self.current + 1).unwrap()
     }
 
     fn is_alpha_numberic(&self, c: char) -> bool {
@@ -205,16 +220,19 @@ impl Scanner {
             return false;
         }
 
-        if self.source.chars().nth(self.current).unwrap() != expected {
-            return false;
+        if let Some(c) = self.iter.next() {
+            if c == expected {
+                self.ch = c;
+                return true;
+            }
         }
 
-        self.current += 1;
-        return true;
+        self.ch = '\0';
+        return false;
     }
 
     fn is_at_end(&self) -> bool {
-        self.current >= self.source.len()
+        self.ch == '\0'
     }
 
     fn advance(&mut self) -> char {

@@ -1,6 +1,52 @@
-use std::fmt::Display;
+#[derive(Debug, Clone)]
+pub enum TokenType {
+    LeftParen,
+    RightParen,
+    LeftBrace,
+    RightBrace,
+    Comma,
+    Dot,
+    Minus,
+    Plus,
+    Semicolon,
+    Slash,
+    Star,
 
-use crate::token_type::TokenType;
+    Bang,
+    BangEqual,
+    Equal,
+    EqualEqual,
+    Greater,
+    GreaterEqual,
+    Less,
+    LessEqual,
+
+    Identifier,
+    String,
+    Number,
+
+    And,
+    Class,
+    Else,
+    False,
+    Fun,
+    For,
+    If,
+    Nil,
+    Or,
+    Print,
+    Return,
+    Super,
+    This,
+    True,
+    Var,
+    While,
+
+    Comment,
+
+    Error,
+    Eof,
+}
 
 #[derive(Clone)]
 pub enum DataType {
@@ -10,7 +56,7 @@ pub enum DataType {
     Nil,
 }
 
-impl Display for DataType {
+impl std::fmt::Display for DataType {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             DataType::Boolean(val) => {
@@ -34,26 +80,34 @@ pub struct Token {
     pub token_type: TokenType,
     pub lexeme: String,
     pub literal: Option<DataType>,
-    pub line: usize,
 }
 
 impl Token {
     pub fn new(
         token_type: TokenType,
         lexeme: String,
+    ) -> Self {
+        Self {
+            token_type,
+            lexeme,
+            literal: None,
+        }
+    }
+
+    pub fn new_with_literal(
+        token_type: TokenType,
+        lexeme: String,
         literal: Option<DataType>,
-        line: usize,
     ) -> Self {
         Self {
             token_type,
             lexeme,
             literal,
-            line,
         }
     }
 }
 
-impl Display for Token {
+impl std::fmt::Display for Token {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if let Some(literal) = &self.literal {
             write!(f, "{:?} {} {}", self.token_type, self.lexeme, literal)

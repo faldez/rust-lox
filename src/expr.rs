@@ -1,5 +1,11 @@
 use crate::token::{DataType, Token};
 
+pub trait Visitor<T> {
+    fn visit_expr(expr: &Expr) -> T;
+}
+
+pub struct AstPrinter {}
+
 macro_rules! parenthesize {
     ($name:expr, $($exprs:ident),+) => {{
         let mut result = String::new();
@@ -18,11 +24,8 @@ pub enum Expr {
     Unary(Token, Box<Expr>),
 }
 
-pub trait Visitor<T> {
-    fn visit_expr(expr: &Expr) -> T;
-}
 
-pub struct AstPrinter {}
+
 
 impl Visitor<String> for AstPrinter {
     fn visit_expr(expr: &Expr) -> String {

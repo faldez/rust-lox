@@ -1,4 +1,4 @@
-use std::{error::Error, fs, io::{self, BufRead, Read, Write}};
+use std::{error::Error, fs, io::{self, BufRead, Write}};
 
 use crate::scanner::Scanner;
 
